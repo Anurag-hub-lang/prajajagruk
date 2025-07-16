@@ -1,0 +1,914 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>E-paper Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+ 
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f2f4f8;
+    color: #222;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .logo-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+    background-color: var(--background);
+  }
+
+  .logo-header img {
+    max-height: 60px;
+    width: auto;
+    max-width: 90%;
+    height: auto;
+    transition: transform 0.3s ease;
+  }
+
+  .logo-header img:hover {
+    transform: scale(1.1);
+  }
+
+  body.dark-mode {
+    background-color: #1e1e1e;
+    color: #ddd;
+    filter: brightness(0.8);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  }
+
+  .live-info {
+    background: #fff;
+    padding: 15px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    border-bottom: 2px solid #ccc;
+  }
+
+  .live-info .box {
+    flex: 1 1 200px;
+    text-align: center;
+  }
+
+  .live-info .box h4 {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    color: #004e89;
+  }
+
+  .live-info .box p {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: black;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  body.dark-mode .topbar {
+    background-color: #222;
+    color: #eee;
+  }
+
+  .topbar input[type="date"] {
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+   
+  }
+
+  /* Updated: use .main-grid instead of overriding .container */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .sidebar, .right-sidebar {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    max-height: 600px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  body.dark-mode .sidebar,
+  body.dark-mode .right-sidebar {
+    background-color: #1e1e1e;
+    color: #ddd;
+    box-shadow: 0 2px 6px rgba(255,255,255,0.1);
+  }
+
+  .main-content {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  body.dark-mode .main-content {
+    background-color: #242424;
+    color: #ddd;
+    box-shadow: 0 2px 6px rgba(255,255,255,0.1);
+  }
+
+  #pdfRenderer {
+    width: 100%;
+    border: 1px solid #ccc;
+    display: block;
+    margin: 0 auto;
+    background-color: white;
+    transition: background-color 0.3s;
+  }
+
+  body.dark-mode #pdfRenderer {
+    background-color: #333;
+    border-color: #555;
+  }
+
+  .sidebar img, .thumbnail-grid img {
+    width: 100%;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    object-fit: cover;
+    transition: filter 0.3s;
+  }
+
+  .sidebar img {
+    height: 120px;
+  }
+
+  body.dark-mode .sidebar img,
+  body.dark-mode .thumbnail-grid img {
+    filter: brightness(0.8);
+  }
+
+  .ad-placeholder {
+    background-color: #f8f9fa;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px dashed #ccc;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+    color: #777;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  body.dark-mode .ad-placeholder {
+    background-color: #333;
+    color: #bbb;
+    border-color: #666;
+  }
+
+  .nav-buttons {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    padding: 0 20px;
+    pointer-events: none;
+  }
+
+  .side-nav {
+    pointer-events: all;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 24px;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .side-nav:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(0,0,0,0.6);
+  }
+
+  .modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  body.dark-mode .modal-content {
+    background-color: #222;
+    color: #ddd;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-close {
+    font-size: 28px;
+    cursor: pointer;
+  }
+
+  .thumbnail-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .thumbnail-grid img {
+    width: 100px;
+    height: 140px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s;
+    object-fit: cover;
+  }
+
+  .thumbnail-grid img:hover {
+    transform: scale(1.05);
+  }
+
+  .mode-toggle {
+    position: fixed;
+    top: 275px;
+    right: 20px;
+    z-index: 1000;
+    cursor: pointer;
+    user-select: none;
+    font-size: 16px;
+    background: #444;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 14px;
+    transition: background-color 0.3s;
+  }
+
+  .mode-toggle:hover {
+    background: #666;
+  }
+  #pdfOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.article-block {
+  position: absolute;
+  border: 2px dashed rgba(0, 123, 255, 0.6);
+  pointer-events: auto;
+  cursor: zoom-in;
+  z-index: 11;
+}
+
+.article-block:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+
+  /* Responsive Media Queries */
+  @media (max-width: 992px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar, .right-sidebar {
+      display: none;
+    }
+
+    .nav-buttons {
+      top: 90%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .logo-header {
+      padding: 15px 0;
+    }
+
+    .logo-header img {
+      max-height: 50px;
+      max-width: 85%;
+    }
+
+    .live-info {
+      padding: 10px 15px;
+      gap: 15px;
+    }
+
+    .live-info .box {
+      flex: 0 0 180px;
+    }
+
+    .live-info .box h4 {
+      font-size: 1rem;
+    }
+
+    .live-info .box p {
+      font-size: 0.95rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .logo-header {
+      padding: 10px 0;
+    }
+
+    .logo-header img {
+      max-height: 40px;
+      max-width: 80%;
+    }
+
+    .live-info {
+      padding: 8px 10px;
+      gap: 10px;
+    }
+
+    .live-info .box {
+      flex: 0 0 160px;
+    }
+
+    .live-info .box h4 {
+      font-size: 0.95rem;
+    }
+
+    .live-info .box p {
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Optional: Footer text center on mobile */
+  @media (max-width: 768px) {
+    footer .row > div {
+      text-align: center;
+    }
+  }
+  #pdfOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.article-block {
+  position: absolute;
+  border: 2px dashed rgba(0, 123, 255, 0.6);
+  pointer-events: auto;
+  cursor: zoom-in;
+  z-index: 11;
+}
+
+.article-block:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+</style>
+
+</head>
+<body>  <!-- Logo Header -->
+<div class="logo-header">
+  <img src="images/Prajajagruk.png" alt="Prajajagruk Logo">
+</div>
+
+
+
+<!-- Top Bar Section -->
+<div class="topbar d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 px-3 py-2">
+  <!-- Left Section -->
+  <div class="topbar-left d-flex flex-column flex-sm-row align-items-start align-items-sm-center">
+    <span class="me-sm-2 mb-1 mb-sm-0">🏠 Page:</span>
+    <div id="pageButtons" class="btn-group btn-group-sm" role="group" aria-label="Page buttons">
+      Loading...
+    </div>
+  </div>
+
+  <!-- Right Section -->
+  <div class="topbar-right d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+    <label class="d-flex align-items-center">
+      <input type="checkbox" id="thumbToggle" onclick="toggleModal()" class="me-1"> Thumbnails
+    </label>
+    <input type="date" id="datePicker" value="2025-07-16" class="form-control form-control-sm" />
+    <button id="modeToggleBtn" class="mode-toggle btn btn-sm btn-outline-secondary" aria-label="Toggle dark mode">🌙</button>
+  </div>
+</div>
+
+
+<!-- Main Content Grid Layout -->
+<div class="main-grid">
+
+  <!-- Left Sidebar -->
+  <div class="sidebar" id="sidebarThumbnails">
+    <h5>📰 Supplements</h5>
+    <!-- Thumbnails will be inserted here -->
+  </div>
+
+  <!-- Center Content -->
+  <div class="main-content position-relative">
+          <div style="text-align:center; color:#777; font-size:18px; padding:40px;">
+        No e-paper PDF found for <strong>2025-07-16</strong>.<br />
+        Please select another date.
+      </div>
+      </div>
+
+  <!-- Right Sidebar -->
+  <div class="right-sidebar">
+          <div class="ad-placeholder">Advertisement</div>
+      </div>
+
+</div>
+
+<!-- Modal for Thumbnails -->
+<div id="thumbnailModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header d-flex justify-content-between align-items-center">
+      <h4>All Pages</h4>
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+    </div>
+    <div id="thumbnailGrid" class="thumbnail-grid"></div>
+  </div>
+</div>
+
+ <!-- Modal for Zoomed Article -->
+<div id="articleModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header d-flex justify-content-between align-items-center">
+      <h4>Zoomed Article</h4>
+      <span class="modal-close" onclick="closeArticleModal()">&times;</span>
+    </div>
+    <canvas id="zoomCanvas" style="max-width:100%; border:1px solid #ccc;"></canvas>
+  </div>
+</div>
+
+<script>
+  // Date picker reload fixed
+  document.getElementById('datePicker').addEventListener('change', e => {
+    const selectedDate = e.target.value;
+    window.location.href = `?date=${selectedDate}`;
+  });
+
+  // Dark mode toggle logic
+  const modeToggleBtn = document.getElementById('modeToggleBtn');
+  const body = document.body;
+
+  // Load saved mode from localStorage
+  if (localStorage.getItem('epaperMode') === 'dark') {
+    body.classList.add('dark-mode');
+    modeToggleBtn.textContent = '☀️ ';
+  }
+
+  modeToggleBtn.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    if (body.classList.contains('dark-mode')) {
+      modeToggleBtn.textContent = '☀️ ';
+      localStorage.setItem('epaperMode', 'dark');
+    } else {
+      modeToggleBtn.textContent = '🌙 ';
+      localStorage.setItem('epaperMode', 'light');
+    }
+  });
+</script>
+
+<script>
+  <!-- Logo Header -->
+  <div class="logo-header">
+    <img src="images/Prajajagruk.png" alt="Prajajagruk Logo">
+  </div>
+
+  <!-- Top Bar Section -->
+  <div class="topbar d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 px-3 py-2">
+    <div class="topbar-left d-flex flex-column flex-sm-row align-items-start align-items-sm-center">
+      <span class="me-sm-2 mb-1 mb-sm-0">🏠 Page:</span>
+      <div id="pageButtons" class="btn-group btn-group-sm" role="group">Loading...</div>
+    </div>
+    <div class="topbar-right d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+      <label class="d-flex align-items-center">
+        <input type="checkbox" id="thumbToggle" onclick="toggleModal()" class="me-1"> Thumbnails
+      </label>
+      <input type="date" id="datePicker" value="2025-07-16" class="form-control form-control-sm" />
+      <button id="modeToggleBtn" class="mode-toggle btn btn-sm btn-outline-secondary">🌙</button>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <div class="main-grid">
+    <!-- Sidebar Thumbnails -->
+    <div class="sidebar" id="sidebarThumbnails">
+      <h5>📰 Supplements</h5>
+    </div>
+
+    <!-- PDF Viewer Area -->
+    <div class="main-content position-relative">
+              <div style="text-align:center; color:#777; font-size:18px; padding:40px;">
+          No e-paper PDF found for <strong>2025-07-16</strong>.<br />
+          Please select another date.
+        </div>
+          </div>
+
+    <!-- Right Ad Section -->
+    <div class="right-sidebar">
+                    <div class="ad-placeholder">Advertisement</div>
+          </div>
+  </div>
+
+  <!-- Modal for Thumbnails -->
+  <div id="thumbnailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4>All Pages</h4>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <div id="thumbnailGrid" class="thumbnail-grid"></div>
+    </div>
+  </div>
+
+
+  <!-- Modal for Zoomed Article -->
+<div id="articleModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header d-flex justify-content-between align-items-center">
+      <h4>Zoomed Article</h4>
+      <span class="modal-close" onclick="closeArticleModal()">&times;</span>
+    </div>
+    <canvas id="zoomCanvas" style="max-width:100%; border:1px solid #ccc;"></canvas>
+  </div>
+</div>
+
+  
+
+<script>
+const articleBlocks = [
+  { page: 1, x: 100, y: 150, width: 250, height: 200, title: "Article 1" },
+  { page: 1, x: 400, y: 250, width: 200, height: 180, title: "Article 2" }
+];
+
+function drawArticleBlocks(page, viewport) {
+  const overlay = document.getElementById('pdfOverlay');
+  overlay.innerHTML = '';
+
+  articleBlocks.forEach(block => {
+    if (block.page !== page.pageNumber) return;
+
+    const div = document.createElement('div');
+    div.className = 'article-block';
+
+    const transform = viewport.transform;
+    const [x, y] = pdfjsLib.Util.applyTransform([block.x, block.y], transform);
+    const [w, h] = [block.width * viewport.scale, block.height * viewport.scale];
+
+    div.style.left = `${x}px`;
+    div.style.top = `${y - h}px`; // adjust for PDF's bottom-origin Y
+    div.style.width = `${w}px`;
+    div.style.height = `${h}px`;
+    div.title = block.title;
+
+    div.onclick = () => zoomArticle(page, block);
+
+    overlay.appendChild(div);
+  });
+}
+
+function zoomArticle(page, block) {
+  const zoomCanvas = document.getElementById('zoomCanvas');
+  const zoomCtx = zoomCanvas.getContext('2d');
+
+  const scaleZoom = 2.5;
+  const viewport = page.getViewport({ scale: scaleZoom });
+
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCanvas.width = viewport.width;
+  tempCanvas.height = viewport.height;
+
+  page.render({ canvasContext: tempCtx, viewport }).promise.then(() => {
+    const imageData = tempCtx.getImageData(
+      block.x * scaleZoom,
+      (page.view[3] - block.y - block.height) * scaleZoom,
+      block.width * scaleZoom,
+      block.height * scaleZoom
+    );
+
+    zoomCanvas.width = block.width * scaleZoom;
+    zoomCanvas.height = block.height * scaleZoom;
+    zoomCtx.putImageData(imageData, 0, 0);
+
+    document.getElementById('articleModal').style.display = 'block';
+  });
+}
+
+function closeArticleModal() {
+  document.getElementById('articleModal').style.display = 'none';
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
+<script>
+const url = '';
+
+const articleBlocks = [
+  { page: 1, x: 100, y: 150, width: 250, height: 200, title: "Article 1" },
+  { page: 2, x: 50, y: 100, width: 300, height: 180, title: "Article 2" }
+];
+
+let pdfDoc = null,
+    pageNum = 1,
+    pageRendering = false,
+    pageNumPending = null,
+    scale = 1.3,
+    canvas = document.getElementById('pdfRenderer'),
+    ctx = canvas.getContext('2d');
+
+function renderPage(num) {
+  pageRendering = true;
+  pdfDoc.getPage(num).then(page => {
+    const viewport = page.getViewport({ scale: scale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    };
+
+    const renderTask = page.render(renderContext);
+    renderTask.promise.then(() => {
+      drawArticleBlocks(page, viewport); // ⬅️ This adds hover effect
+      pageRendering = false;
+      if (pageNumPending !== null) {
+        renderPage(pageNumPending);
+        pageNumPending = null;
+      }
+    });
+
+    highlightActiveThumbnail(num);
+    pageNum = num;
+  });
+}
+
+function queueRenderPage(num) {
+  if (pageRendering) {
+    pageNumPending = num;
+  } else {
+    renderPage(num);
+  }
+}
+
+function prevPage() {
+  if (pageNum <= 1) return;
+  queueRenderPage(pageNum - 1);
+}
+
+function nextPage() {
+  if (pageNum >= pdfDoc.numPages) return;
+  queueRenderPage(pageNum + 1);
+}
+
+function drawArticleBlocks(page, viewport) {
+  const overlay = document.getElementById("pdfOverlay");
+  overlay.innerHTML = '';
+
+  articleBlocks.forEach(block => {
+    if (block.page === page.pageNumber) {
+      const div = document.createElement("div");
+      div.classList.add("article-block");
+      div.style.left = (block.x * scale) + "px";
+      div.style.top = (block.y * scale) + "px";
+      div.style.width = (block.width * scale) + "px";
+      div.style.height = (block.height * scale) + "px";
+
+      div.onclick = () => showZoomedArticle(page, viewport, block);
+      overlay.appendChild(div);
+    }
+  });
+}
+
+function showZoomedArticle(page, viewport, block) {
+  page.getOperatorList().then(() => {
+    const canvasZoom = document.getElementById("zoomCanvas");
+    const zoomCtx = canvasZoom.getContext("2d");
+
+    const scaleFactor = 2; // Zoom level
+    const zoomViewport = page.getViewport({ scale: scaleFactor });
+    canvasZoom.width = block.width * scaleFactor;
+    canvasZoom.height = block.height * scaleFactor;
+
+    const transform = pdfjsLib.Util.transform(
+      zoomViewport.transform,
+      [1, 0, 0, 1, -block.x, -block.y]
+    );
+
+    const renderContext = {
+      canvasContext: zoomCtx,
+      transform: transform,
+      viewport: zoomViewport
+    };
+
+    page.render(renderContext).promise.then(() => {
+      document.getElementById("articleModal").style.display = "block";
+    });
+  });
+}
+
+function closeArticleModal() {
+  document.getElementById("articleModal").style.display = "none";
+}
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.worker.min.js';
+
+pdfjsLib.getDocument(url).promise.then(pdf => {
+  pdfDoc = pdf;
+
+  const pageButtons = document.getElementById('pageButtons');
+  pageButtons.innerHTML = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm';
+    btn.textContent = i;
+    btn.style.backgroundColor = 'white';
+    btn.style.color = 'black';
+    btn.style.border = '1px solid #ccc';
+    btn.onclick = () => queueRenderPage(i);
+    pageButtons.appendChild(btn);
+  }
+
+  renderPage(pageNum);
+  generateThumbnails();
+});
+
+function generateThumbnails() {
+  const sidebar = document.getElementById('sidebarThumbnails');
+  const modalGrid = document.getElementById('thumbnailGrid');
+  sidebar.innerHTML = '<h5>📰 Supplements</h5>';
+  modalGrid.innerHTML = '';
+
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    pdfDoc.getPage(i).then(page => {
+      const viewport = page.getViewport({ scale: 0.15 });
+      const canvasThumb = document.createElement('canvas');
+      const context = canvasThumb.getContext('2d');
+      canvasThumb.width = viewport.width;
+      canvasThumb.height = viewport.height;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+
+      page.render(renderContext).promise.then(() => {
+        const imgSrc = canvasThumb.toDataURL();
+
+        const thumbImg = document.createElement('img');
+        thumbImg.src = imgSrc;
+        thumbImg.alt = `Page ${i}`;
+        thumbImg.title = `Page ${i}`;
+        thumbImg.onclick = () => queueRenderPage(i);
+        sidebar.appendChild(thumbImg);
+
+        const modalThumbImg = document.createElement('img');
+        modalThumbImg.src = imgSrc;
+        modalThumbImg.alt = `Page ${i}`;
+        modalThumbImg.title = `Page ${i}`;
+        modalThumbImg.onclick = () => {
+          queueRenderPage(i);
+          closeModal();
+        };
+        modalGrid.appendChild(modalThumbImg);
+      });
+    });
+  }
+}
+
+function highlightActiveThumbnail(currentPage) {
+  const sidebar = document.getElementById('sidebarThumbnails');
+  const imgs = sidebar.querySelectorAll('img');
+  imgs.forEach(img => {
+    img.style.border = '';
+    img.style.opacity = '0.6';
+  });
+  if (imgs[currentPage - 1]) {
+    imgs[currentPage - 1].style.border = '3px solid #007bff';
+    imgs[currentPage - 1].style.opacity = '1';
+  }
+
+  const modalGrid = document.getElementById('thumbnailGrid');
+  const modalImgs = modalGrid.querySelectorAll('img');
+  modalImgs.forEach(img => img.style.border = '');
+  if (modalImgs[currentPage - 1]) {
+    modalImgs[currentPage - 1].style.border = '3px solid #007bff';
+  }
+}
+</script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Social Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <footer style="background-color:rgb(7, 7, 7); color: white; padding: 40px 0;">
+    <div class="container">
+        <div class="row text-white">
+
+        <!-- 1. Logo & Description -->
+        <div class="col-md-3 mb-4">
+            <img src="images/Prajajagruk.png" alt="Logo" style="height: 50px;width:250px; margin-bottom: 10px;">
+            <p style="font-size: 14px;">
+            Prajajagruk is a responsible and impactful newspaper under Aaryans Media House, dedicated to delivering accurate, unbiased news and raising public awareness.
+            </p>
+        </div>
+
+        <!-- 2. Investor Section -->
+        <div class="col-md-3 mb-4">
+            <h5>Investor Section</h5>
+            <ul class="list-unstyled" style="line-height: 1.8; font-size: 14px;">
+            <li><a href="#" class="text-white text-decoration-none">About Us</a></li>
+            <li><a href="#" class="text-white text-decoration-none">Awards</a></li>
+            <li><a href="#" class="text-white text-decoration-none">News</a></li>
+            <li><a href="#" class="text-white text-decoration-none">Media Coverage</a></li>
+            <li><a href="#" class="text-white text-decoration-none">Blogs</a></li>
+            </ul>
+        </div>
+
+        <!-- 3. Contact Us -->
+        <div class="col-md-3 mb-4" style="font-size: 14px;">
+            <h5>Contact Us</h5>
+            <p><strong>Head Office:</strong></p>
+            <p style="margin: 0;">
+            Aaryan's Media House, Bavdhan Service Rd.,<br>
+            Ram Nagar, Bavdhan,<br>
+            Pune, Maharashtra 411042
+            </p>
+            <p style="margin: 5px 0;"><strong>Phone:</strong> +91 774 403 8427</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> contact@aaryansgroup.org</p>
+        </div>
+
+        <!-- 4. Keep in Touch -->
+        <div class="col-md-3 mb-4">
+            <h5>Keep in Touch</h5>
+            <p style="font-size: 14px;">Connect with us on social media:</p>
+            <div class="d-flex gap-3 mt-2 fs-5">
+            <a href="#" class="text-white"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="text-white"><i class="fab fa-youtube"></i></a>
+            <a href="#" class="text-white"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="text-white"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="text-white"><i class="fab fa-telegram"></i></a>
+            </div>
+        </div>
+        </div>
+    </div>
+    </footer>
+</body>
+</html>
